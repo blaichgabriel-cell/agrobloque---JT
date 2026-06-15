@@ -47,12 +47,15 @@ export default function Asistencia() {
   const [modalAdelanto, setModalAdelanto] = useState(null)
   const [modalHistorial, setModalHistorial] = useState(null)
   const [modalEditarAdelanto, setModalEditarAdelanto] = useState(null)
+  const [modalEmpleado, setModalEmpleado] = useState(false)
   const [formAdelanto, setFormAdelanto] = useState({ monto:'', descripcion:'' })
   const [formEditarAdelanto, setFormEditarAdelanto] = useState({ monto:'', descripcion:'' })
+  const [formEmpleado, setFormEmpleado] = useState({ nombre:'' })
   const [notasDia, setNotasDia] = useState({})
   const [fechaNotaActiva, setFechaNotaActiva] = useState('')
   const [savingNota, setSavingNota] = useState(false)
   const [savingAdelanto, setSavingAdelanto] = useState(false)
+  const [savingEmpleado, setSavingEmpleado] = useState(false)
   const [error, setError] = useState('')
   const saveTimers = useRef({})
 
@@ -90,6 +93,33 @@ export default function Asistencia() {
     const { data } = await supabase.from('operarios').select('*').eq('campo_id', campoActivo.id).order('orden', { ascending: true })
     setOperarios(data || [])
     if (data) fetchAdelantos(data)
+  }
+
+  const guardarEmpleado = async () => {
+    if (!campoActivo) return
+    const nombre = formEmpleado.nombre.trim()
+    if (!nombre) {
+      setError('Escribi el nombre del empleado.')
+      return
+    }
+
+    setSavingEmpleado(true)
+    setError('')
+    try {
+      const { error } = await supabase.from('operarios').insert({
+        campo_id: campoActivo.id,
+        nombre,
+        orden: operarios.length + 1,
+        activo: true,
+      })
+      if (error) throw error
+      setFormEmpleado({ nombre:'' })
+      setModalEmpleado(false)
+      fetchOperarios()
+    } catch (e) {
+      setError(`No se pudo agregar el empleado: ${e.message || 'sin detalle'}`)
+    }
+    setSavingEmpleado(false)
   }
 
   const fetchRegistros = async () => {
@@ -301,8 +331,15 @@ export default function Asistencia() {
   return (
     <div style={{ background:'#f2f1ef', minHeight:'100vh' }}>
       <div style={{ background:'#f2f1ef', padding: isDesktop ? '34px 36px 18px' : '24px 20px 16px' }}>
-        <div style={{ fontSize:12, color:'#9a9a9a', marginBottom:4 }}>Control semanal</div>
-        <div style={{ fontSize:24, fontWeight:700, color:'#0a0a0a', letterSpacing:-.5, marginBottom:16 }}>Asistencia y pagos</div>
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, marginBottom:16 }}>
+          <div>
+            <div style={{ fontSize:12, color:'#9a9a9a', marginBottom:4 }}>Control semanal</div>
+            <div style={{ fontSize:24, fontWeight:700, color:'#0a0a0a', letterSpacing:-.5 }}>Asistencia y pagos</div>
+          </div>
+          <button onClick={() => setModalEmpleado(true)} disabled={!campoActivo} style={{ border:'none', background:'#212121', color:'#fff', borderRadius:14, padding:'11px 14px', fontSize:12, fontWeight:800, cursor: campoActivo ? 'pointer' : 'not-allowed', opacity: campoActivo ? 1 : 0.55 }}>
+            + Empleado
+          </button>
+        </div>
         {error && <div style={{ background:'#fff0f0', color:'#c84040', fontSize:12, padding:'8px 12px', borderRadius:10, marginBottom:10 }}>{error}</div>}
         <div style={{ display:'flex', gap:5, background:'#e8e6e2', borderRadius:14, padding:4, marginBottom:16 }}>
           {campos.map(c => (
@@ -319,6 +356,14 @@ export default function Asistencia() {
       </div>
 
       <div style={{ padding: isDesktop ? '12px 36px 100px' : '12px 14px 100px' }}>
+        {operarios.length === 0 && (
+          <div style={{ background:'#fff', borderRadius:20, padding:'24px 18px', marginBottom:12, textAlign:'center', boxShadow: isDesktop ? '0 10px 28px rgba(29,38,29,0.045)' : 'none' }}>
+            <div style={{ fontSize:15, fontWeight:800, color:'#0a0a0a', marginBottom:6 }}>Sin empleados cargados</div>
+            <div style={{ fontSize:12, color:'#8b918b', marginBottom:14 }}>Agrega el primer empleado para empezar a cargar asistencia y pagos.</div>
+            <button onClick={() => setModalEmpleado(true)} style={{ border:'none', background:'#212121', color:'#fff', borderRadius:14, padding:'11px 15px', fontSize:12, fontWeight:800, cursor:'pointer' }}>+ Agregar empleado</button>
+          </div>
+        )}
+
         {operarios.map(op => (
           <div key={op.id} style={{ background:'#fff', borderRadius:20, marginBottom:10, overflow:'hidden', boxShadow: isDesktop ? '0 10px 28px rgba(29,38,29,0.045)' : 'none' }}>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'14px 16px', borderBottom:'1px solid #f2f1ef' }}>
@@ -462,6 +507,28 @@ export default function Asistencia() {
               type="text" value={formAdelanto.descripcion} onChange={e => setFormAdelanto(f=>({...f,descripcion:e.target.value}))} placeholder="Ej: Adelanto quincena"/>
             <button style={{ width:'100%', padding:14, borderRadius:14, background:'#212121', border:'none', fontSize:14, fontWeight:700, color:'#fff', cursor:'pointer' }} onClick={guardarAdelanto} disabled={savingAdelanto}>{savingAdelanto ? 'Guardando...' : 'Guardar adelanto'}</button>
             <button style={{ width:'100%', padding:12, borderRadius:14, background:'transparent', border:'1px solid #e8e6e2', fontSize:13, color:'#9a9a9a', cursor:'pointer', marginTop:8 }} onClick={() => setModalAdelanto(null)}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal nuevo empleado */}
+      {modalEmpleado && (
+        <div style={{ position:'fixed', top:0, left:0, right:0, bottom:0, background:'rgba(0,0,0,0.4)', zIndex:120, display:'flex', alignItems: typeof window !== 'undefined' && window.innerWidth >= 768 ? 'center' : 'flex-end', justifyContent:'center' }} onClick={e => e.target===e.currentTarget && setModalEmpleado(false)}>
+          <div style={{ background:'#f2f1ef', borderRadius: typeof window !== 'undefined' && window.innerWidth >= 768 ? 24 : '24px 24px 0 0', width:'100%', maxWidth:480, padding:'24px 20px 40px' }}>
+            <div style={{ fontSize:18, fontWeight:700, color:'#0a0a0a', marginBottom:4 }}>Agregar empleado</div>
+            <div style={{ fontSize:12, color:'#9a9a9a', marginBottom:20 }}>{campoActivo?.nombre || 'Campo activo'}</div>
+            <div style={{ fontSize:10, color:'#9a9a9a', marginBottom:6 }}>Nombre</div>
+            <input
+              autoFocus
+              style={{ width:'100%', padding:'11px 14px', borderRadius:12, border:'1px solid #e8e6e2', background:'#fff', fontSize:13, color:'#0a0a0a', marginBottom:16, boxSizing:'border-box' }}
+              type="text"
+              value={formEmpleado.nombre}
+              onChange={e => setFormEmpleado({ nombre:e.target.value })}
+              onKeyDown={e => { if (e.key === 'Enter') guardarEmpleado() }}
+              placeholder="Ej: Juan Perez"
+            />
+            <button style={{ width:'100%', padding:14, borderRadius:14, background:'#212121', border:'none', fontSize:14, fontWeight:700, color:'#fff', cursor:'pointer' }} onClick={guardarEmpleado} disabled={savingEmpleado}>{savingEmpleado ? 'Guardando...' : 'Guardar empleado'}</button>
+            <button style={{ width:'100%', padding:12, borderRadius:14, background:'transparent', border:'1px solid #e8e6e2', fontSize:13, color:'#9a9a9a', cursor:'pointer', marginTop:8 }} onClick={() => setModalEmpleado(false)}>Cancelar</button>
           </div>
         </div>
       )}
