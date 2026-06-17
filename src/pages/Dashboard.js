@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import DesktopDashboard from './DesktopDashboard'
@@ -149,7 +149,7 @@ const accesos = [
   { icon: 'ti-users', label: 'Asistencia', sub: 'Planilla', path: '/asistencia' },
   { icon: 'ti-chart-bar', label: 'Reportes', sub: 'Rentabilidad', path: '/reportes' },
   { icon: 'ti-spray', label: 'Fumigaciones', sub: 'Historial', path: '/fumigaciones', green: true },
-  { icon: 'ti-plant', label: 'Plan Nutricional', sub: 'Fertirriego', path: '/plan-nutricional', green: true },
+  { icon: 'ti-plant', label: 'Fertilizaciones', sub: 'Aplicaciones', path: '/fertilizaciones', green: true },
   { icon: 'ti-box', label: 'Inventario', sub: 'Stock', path: '/inventario' },
   { icon: 'ti-cut', label: 'Cosecha', sub: 'Produccion', path: '/cosecha' },
   { icon: 'ti-cash-register', label: 'Ventas', sub: 'Cobros', path: '/ventas' },
@@ -506,7 +506,7 @@ function construirActividadesMovil({ tareas, cosechas, ventas, costos, fumigacio
     ...(tareas || []).map(t => ({
       id: `tarea-${t.id}`,
       title: t.descripcion || 'Tarea pendiente',
-      sub: `${t.bloques?.codigo ? `Bloque ${t.bloques.codigo} · ` : ''}${t.fecha_programada || ''}`,
+      sub: `${t.bloques?.codigo ? `Bloque ${t.bloques.codigo} Â· ` : ''}${t.fecha_programada || ''}`,
       badge: 'Agenda',
       iconBg: '#eef7ee',
       path: '/agenda',
@@ -524,7 +524,7 @@ function construirActividadesMovil({ tareas, cosechas, ventas, costos, fumigacio
     ...(ventas || []).map(v => ({
       id: `venta-${v.id}`,
       title: v.producto || 'Venta',
-      sub: `${v.compradores?.nombre || 'Comprador'} · ${fmtGs(Number(v.total) || (Number(v.kg_total) || 0) * (Number(v.precio_kg) || 0))}`,
+      sub: `${v.compradores?.nombre || 'Comprador'} Â· ${fmtGs(Number(v.total) || (Number(v.kg_total) || 0) * (Number(v.precio_kg) || 0))}`,
       badge: v.estado_cobro === 'pagado' ? 'Cobrado' : 'Debe',
       iconBg: v.estado_cobro === 'pagado' ? '#eef7ee' : '#fff3e3',
       path: '/ventas',
@@ -533,7 +533,7 @@ function construirActividadesMovil({ tareas, cosechas, ventas, costos, fumigacio
     ...(fumigaciones || []).map(f => ({
       id: `fumigacion-${f.id}`,
       title: f.tipo || 'Fumigacion',
-      sub: `${f.bloques?.map?.(b => b.codigo).filter(Boolean).join(', ') || 'Bloques'}${f.operario ? ` · ${f.operario}` : ''}`,
+      sub: `${f.bloques?.map?.(b => b.codigo).filter(Boolean).join(', ') || 'Bloques'}${f.operario ? ` Â· ${f.operario}` : ''}`,
       badge: 'Hecha',
       iconBg: '#eef7ee',
       path: '/fumigaciones',
@@ -670,7 +670,7 @@ function ResumenFinancieroMini({ onClick }) {
       <div>
         <strong style={{ display:'block', fontSize:20, lineHeight:1.05, marginTop:4, letterSpacing:-0.5 }}>Ingresos, costos y margen</strong>
         <div style={{ color:'#737b74', fontSize:11, lineHeight:1.25, marginTop:8 }}>
-          Tocá para ver jornales, insumos y gastos cargados.
+          TocÃ¡ para ver jornales, insumos y gastos cargados.
         </div>
       </div>
       <span style={{ alignSelf:'flex-start', marginTop:12, background:'#eef7ee', color:'#176a25', borderRadius:10, padding:'7px 10px', fontSize:10.5, fontWeight:850 }}>

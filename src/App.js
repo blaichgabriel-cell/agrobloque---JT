@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+﻿import React, { useState, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { forceLocalSignOut, guestToken, supabase } from './lib/supabase'
 import Login from './pages/Login'
@@ -12,7 +12,7 @@ import Cosecha from './pages/Cosecha'
 import Ventas from './pages/Ventas'
 import Inventario from './pages/Inventario'
 import Fumigaciones from './pages/Fumigaciones'
-import PlanNutricional from './pages/PlanNutricional'
+import Fertilizaciones from './pages/Fertilizaciones'
 import Costos from './pages/Costos'
 import Contabilidad from './pages/Contabilidad'
 import CuentasPagar from './pages/CuentasPagar'
@@ -81,7 +81,7 @@ const allTabs = [
   { path:'/ventas', icon:'ti-cash-register', label:'Ventas' },
   { path:'/inventario', icon:'ti-box', label:'Inventario' },
   { path:'/fumigaciones', icon:'ti-spray', label:'Fumigaciones' },
-  { path:'/plan-nutricional', icon:'ti-leaf', label:'Plan Nutricional' },
+  { path:'/fertilizaciones', icon:'ti-leaf', label:'Fertilizaciones' },
   { path:'/costos', icon:'ti-coin', label:'Costos' },
   { path:'/contabilidad', icon:'ti-calculator', label:'Contabilidad' },
   { path:'/cuentas-pagar', icon:'ti-receipt-2', label:'Cuentas a pagar' },
@@ -90,7 +90,7 @@ const allTabs = [
   { path:'/alertas', icon:'ti-bell-ringing', label:'Alertas' },
   { path:'/historial', icon:'ti-timeline', label:'Historial' },
   { path:'/auditoria', icon:'ti-history', label:'Auditoria' },
-  { path:'/configuracion', icon:'ti-settings', label:'Configuración' },
+  { path:'/configuracion', icon:'ti-settings', label:'ConfiguraciÃ³n' },
 ]
 
 const CAMPO_STORAGE_KEY = 'agrobloque-jt-campo-activo'
@@ -225,7 +225,7 @@ function DesktopSidebar({ isGuest = false, role }) {
         })}
       </div>
 
-      {/* Cerrar sesión */}
+      {/* Cerrar sesiÃ³n */}
       <div style={{ padding: '16px 16px 0', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 12px 16px', color: '#fff' }}>
           <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#4f9e2f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>A</div>
@@ -240,7 +240,7 @@ function DesktopSidebar({ isGuest = false, role }) {
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
           <i className="ti ti-logout" style={{ fontSize: 17, color: '#ff8f8f' }} aria-hidden="true"></i>
-          <span style={{ fontSize: 13, color: '#c84040' }}>Cerrar sesión</span>
+          <span style={{ fontSize: 13, color: '#c84040' }}>Cerrar sesiÃ³n</span>
         </div>
       </div>
     </div>
@@ -294,7 +294,8 @@ function AppLayout({ campoActivo, setCampoActivo, isGuest = false, role }) {
             <Route path="/ventas" element={<ProtectedRoute role={role} moduleKey="ventas"><Ventas/></ProtectedRoute>}/>
             <Route path="/inventario" element={<ProtectedRoute role={role} moduleKey="inventario"><Inventario/></ProtectedRoute>}/>
             <Route path="/fumigaciones" element={<ProtectedRoute role={role} moduleKey="fumigaciones"><Fumigaciones/></ProtectedRoute>}/>
-            <Route path="/plan-nutricional" element={<ProtectedRoute role={role} moduleKey="plan_nutricional"><PlanNutricional campoActivo={campoActivo} isGuest={isGuest}/></ProtectedRoute>}/>
+            <Route path="/fertilizaciones" element={<ProtectedRoute role={role} moduleKey="plan_nutricional"><Fertilizaciones campoActivo={campoActivo} isGuest={isGuest}/></ProtectedRoute>}/>
+            <Route path="/plan-nutricional" element={<Navigate to="/fertilizaciones"/>}/>
             <Route path="/costos" element={<ProtectedRoute role={role} moduleKey="costos"><Costos campoActivo={campoActivo} isGuest={isGuest}/></ProtectedRoute>}/>
             <Route path="/contabilidad" element={<ProtectedRoute role={role} moduleKey="contabilidad"><Contabilidad/></ProtectedRoute>}/>
             <Route path="/cuentas-pagar" element={<ProtectedRoute role={role} moduleKey="cuentas_pagar"><CuentasPagar/></ProtectedRoute>}/>
