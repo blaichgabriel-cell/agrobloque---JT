@@ -143,6 +143,27 @@ function SinPermiso() {
   )
 }
 
+function GuestAccessError({ title = 'No se pudo cargar el acceso invitado', message }) {
+  return (
+    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f2f1ef', padding:24 }}>
+      <div style={{ background:'#fff', border:'1px solid #e8ece8', borderRadius:22, padding:24, maxWidth:420, textAlign:'center', boxShadow:'0 18px 40px rgba(0,0,0,0.08)' }}>
+        <i className="ti ti-link-off" style={{ fontSize:34, color:'#c84040' }} aria-hidden="true"></i>
+        <h2 style={{ margin:'12px 0 8px', fontSize:20 }}>{title}</h2>
+        <p style={{ margin:0, fontSize:13, color:'#687068', lineHeight:1.45 }}>{message}</p>
+      </div>
+    </div>
+  )
+}
+
+function GuestNotice({ message }) {
+  if (!message) return null
+  return (
+    <div style={{ position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: '#fff4e5', color: '#7a4a00', border: '1px solid #ffd89a', borderRadius: 12, padding: '10px 14px', fontSize: 13, boxShadow:'0 10px 24px rgba(0,0,0,0.12)', maxWidth: 620, width: 'calc(100% - 28px)', textAlign: 'center' }}>
+      {message}
+    </div>
+  )
+}
+
 function ProtectedRoute({ role, moduleKey, children }) {
   if (!canAccessModule(role, moduleKey)) return <SinPermiso />
   return children
@@ -323,6 +344,7 @@ export default function App() {
     rol:'lectura',
     permisos:['alertas','historial','mapa','agenda','vivero','cosecha','ventas','inventario','fumigaciones','plan_nutricional','costos','contabilidad','reportes','compradores'],
   }))
+  const [guestStatus, setGuestStatus] = useState({ loading: Boolean(guestToken), error: '' })
   const guestPath = Boolean(guestToken)
 
   useEffect(() => {
@@ -396,12 +418,34 @@ export default function App() {
   useEffect(() => {
     if (!guestPath) return
     supabase.rpc('guest_get_permissions')
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          setGuestStatus({
+            loading: false,
+            error: 'Supabase no pudo validar este link. Probablemente falta ejecutar el SQL de invitados o las politicas RLS no estan actualizadas.',
+          })
+          return
+        }
+
+        if (!data?.ok) {
+          setGuestStatus({
+            loading: false,
+            error: 'Este link de invitado no existe, vencio o fue desactivado.',
+          })
+          return
+        }
+
         if (Array.isArray(data?.permisos) && data.permisos.length > 0) {
           setGuestRole(normalizeRole({ rol:'lectura', permisos:data.permisos }))
         }
+        setGuestStatus({ loading: false, error: '' })
       })
-      .catch(() => {})
+      .catch(() => {
+        setGuestStatus({
+          loading: false,
+          error: 'No se pudo conectar con Supabase para validar el link de invitado.',
+        })
+      })
   }, [guestPath])
 
   useEffect(() => {
@@ -415,18 +459,28 @@ export default function App() {
       const { data, error } = await supabase.from('campos').select('*').order('nombre')
       if (error) {
         console.error('Error cargando campos', error)
-        if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch failed')) {
+        if (guestPath) {
+          setDataError(textoErrorProfesional(error, { modulo:'Invitados / Campos', accion:'leer' }))
+        } else if (error.message?.includes('Failed to fetch') || error.message?.includes('fetch failed')) {
           setDataError('No se pudo conectar con Supabase. Si cargaste una foto de perfil, hay que limpiar esa foto del perfil en Supabase una sola vez.')
         } else if (esErrorSesion(error)) {
           await limpiarSesionRota(`No se pudo conectar con Supabase. Se limpio la sesion; inicia sesion de vuelta. Detalle: ${error.message}`)
         } else setDataError(textoErrorProfesional(error, { modulo:'Campos', accion:'leer' }))
         return
       }
-      if (cancelled || !data || data.length === 0) return
+      if (cancelled) return
+      if (!data || data.length === 0) {
+        if (guestPath) {
+          setDataError('El link fue validado, pero Supabase no devolvio campos para el invitado. Ejecuta el SQL supabase/invitados_fix_total_2026_06_18.sql y revisa que el link tenga campo permitido.')
+        }
+        return
+      }
       const { data: bloques, error: bloquesError } = await supabase.from('bloques').select('campo_id')
       if (bloquesError) {
         console.error('Error cargando bloques', bloquesError)
-        if (bloquesError.message?.includes('Failed to fetch') || bloquesError.message?.includes('fetch failed')) {
+        if (guestPath) {
+          setDataError(textoErrorProfesional(bloquesError, { modulo:'Invitados / Bloques', accion:'leer' }))
+        } else if (bloquesError.message?.includes('Failed to fetch') || bloquesError.message?.includes('fetch failed')) {
           setDataError('No se pudo conectar con Supabase. Si cargaste una foto de perfil, hay que limpiar esa foto del perfil en Supabase una sola vez.')
         } else if (esErrorSesion(bloquesError)) {
           await limpiarSesionRota(`No se pudo conectar con Supabase. Se limpio la sesion; inicia sesion de vuelta. Detalle: ${bloquesError.message}`)
@@ -451,9 +505,18 @@ export default function App() {
     window.localStorage.setItem(CAMPO_STORAGE_KEY, campoActivo.id)
   }, [campoActivo])
 
+  if (guestPath && guestStatus.loading) return (
+    <GuestAccessError title="Validando acceso invitado" message="Estamos comprobando que el link siga activo." />
+  )
+
+  if (guestPath && guestStatus.error) return (
+    <GuestAccessError message={guestStatus.error} />
+  )
+
   if (guestPath) return (
     <BrowserRouter basename={`/invitado/${guestToken}`}>
       <ScrollToTop />
+      <GuestNotice message={dataError} />
       <AppLayout campoActivo={campoActivo} setCampoActivo={setCampoActivo} isGuest role={guestRole} />
     </BrowserRouter>
   )
